@@ -49,7 +49,7 @@ const projects = [
     year: "2026",
     image: "/projects/calculatr.png",
     imageAlt: "calculatr.app projesinin ana sayfa arayüzü",
-    icon: <CalculatrIcon className="size-6 shrink-0" />,
+    icon: <CalculatrIcon className="size-5 md:size-6 lg:size-7 shrink-0" />,
   },
   {
     id: "rdronline-project-title",
@@ -62,11 +62,11 @@ const projects = [
     imageAlt: "Red Dead Online Türkiye web sitesinin ana sayfa arayüzü",
     icon: (
       <Image
-        className="size-6 shrink-0 object-contain"
+        className="size-5 md:size-6 lg:size-7 shrink-0 object-contain"
         src="/projects/rdronline-icon.png"
         alt=""
-        width={24}
-        height={24}
+        width={28}
+        height={28}
       />
     ),
   },
@@ -81,11 +81,11 @@ const projects = [
     imageAlt: "Eşme Belediyesi web sitesinin ana sayfa arayüzü",
     icon: (
       <Image
-        className="size-6 shrink-0 object-contain"
+        className="size-5 md:size-6 lg:size-7 shrink-0 object-contain"
         src="/projects/esme-icon.png"
         alt=""
-        width={24}
-        height={24}
+        width={28}
+        height={28}
       />
     ),
   },
@@ -103,7 +103,7 @@ export default function Home() {
       />
       <div className="relative isolate min-h-svh overflow-hidden">
         <div
-          className="hero-enter-rays absolute inset-0 -z-10"
+          className="hero-enter-rays absolute top-0 right-0 -z-10 h-full w-256 lg:w-full"
           aria-hidden="true"
         >
           <SideRays
@@ -184,14 +184,14 @@ export default function Home() {
           {projects.map((project) => (
             <article key={project.id} aria-labelledby={project.id}>
               <ScrollReveal>
-                <header className="grid grid-cols-1 items-start gap-3 text-base md:grid-cols-[minmax(0,1fr)_auto] md:gap-6 md:text-lg lg:text-xl">
+                <header className="grid grid-cols-1 items-start gap-3 text-center text-lg md:grid-cols-[minmax(0,1fr)_auto] md:gap-6 md:text-left md:text-xl lg:text-2xl">
                   <div className="min-w-0">
                     <h2
                       id={project.id}
-                      className="flex min-w-0 items-center gap-1.5"
+                      className="flex min-w-0 flex-col items-center gap-1 md:flex-row md:gap-1.5"
                     >
                       <a
-                        className="inline-flex items-center gap-2 font-medium text-foreground"
+                        className="inline-flex items-center gap-2 whitespace-nowrap font-medium text-foreground"
                         href={project.href}
                         target="_blank"
                         rel="noreferrer"
