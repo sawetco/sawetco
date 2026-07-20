@@ -154,6 +154,10 @@ const nextConfig: NextConfig = {
         source: "/icons/:path*",
         headers: crossOriginImageHeaders,
       },
+      {
+        source: "/pars.png",
+        headers: crossOriginImageHeaders,
+      },
     ];
   },
   poweredByHeader: false,
