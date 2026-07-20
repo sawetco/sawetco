@@ -1,0 +1,47 @@
+name: GitHub katkılarını güncelle
+
+on:
+  schedule:
+    - cron: "0 0 * * *"
+      timezone: "Europe/Istanbul"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: update-github-contributions
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Node.js kur
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4
+        with:
+          node-version: 22
+
+      - name: Katkıları güncelle
+        run: node scripts/update-github-contributions.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_USERNAME: sawetco
+
+      - name: Değişiklik varsa commit et
+        shell: bash
+        run: |
+          if git diff --quiet -- data/github-contributions.json; then
+            echo "Katkı snapshot'ı zaten güncel."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/github-contributions.json
+          git commit -m "chore: GitHub katkılarını güncelle"
+          git push origin HEAD:main
