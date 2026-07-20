@@ -169,6 +169,25 @@
   animation-duration: 800ms;
 }
 
+@media (width < 48rem) {
+  .hero-enter-rays {
+    -webkit-mask-image: radial-gradient(
+      ellipse 62% 44% at 100% 0%,
+      #000 0%,
+      rgb(0 0 0 / 90%) 32%,
+      rgb(0 0 0 / 35%) 68%,
+      transparent 100%
+    );
+    mask-image: radial-gradient(
+      ellipse 62% 44% at 100% 0%,
+      #000 0%,
+      rgb(0 0 0 / 90%) 32%,
+      rgb(0 0 0 / 35%) 68%,
+      transparent 100%
+    );
+  }
+}
+
 .hero-enter-header {
   animation-duration: 700ms;
   animation-delay: 650ms;

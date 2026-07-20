@@ -103,22 +103,24 @@ export default function Home() {
       />
       <div className="relative isolate min-h-svh overflow-hidden">
         <div
-          className="hero-enter-rays absolute top-0 right-0 -z-10 h-full w-256 lg:w-full"
+          className="hero-enter-rays absolute inset-0 -z-10"
           aria-hidden="true"
         >
-          <SideRays
-            rayColor1="#1d4ed8"
-            rayColor2="#2563eb"
-            origin="top-right"
-            speed={2}
-            intensity={2}
-            spread={2.5}
-            tilt={0}
-            saturation={1.5}
-            blend={0.5}
-            falloff={2}
-            opacity={0.5}
-          />
+          <div className="absolute top-0 right-0 h-full w-256 lg:w-full">
+            <SideRays
+              rayColor1="#1d4ed8"
+              rayColor2="#2563eb"
+              origin="top-right"
+              speed={2}
+              intensity={2}
+              spread={2.5}
+              tilt={0}
+              saturation={1.5}
+              blend={0.5}
+              falloff={2}
+              opacity={0.5}
+            />
+          </div>
         </div>
 
         <SiteHeader />
