@@ -71,7 +71,7 @@ function LegendCell({ level }: { level: ContributionLevel }) {
 export function ContributionCalendar() {
   return (
     <figure
-      className="mx-auto mt-14 w-full min-w-0 sm:mt-20"
+      className="mx-auto mt-14 w-full min-w-0 select-none sm:mt-20"
       aria-label={`${contributionSnapshot.account} GitHub katkıları, son 365 gün`}
     >
       <div className="w-full">

@@ -5,7 +5,7 @@
 <h1 align="center">sawet</h1>
 
 <p align="center">
-  web'de bir şeyler tasarlayan ve geliştiren full-stack developer.
+  web'de bir şeyler tasarlayan ve geliştiren full stack developer.
 </p>
 
 <p align="center">

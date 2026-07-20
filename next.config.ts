@@ -117,13 +117,42 @@ const securityHeaders = [
   },
 ];
 
+const crossOriginImageHeaders = securityHeaders.map((header) =>
+  header.key === "Cross-Origin-Resource-Policy"
+    ? { ...header, value: "cross-origin" }
+    : header,
+);
+
 const nextConfig: NextConfig = {
   cacheComponents: true,
+  images: {
+    qualities: [75, 100],
+  },
   async headers() {
     return [
       {
         source: "/:path*",
         headers: securityHeaders,
+      },
+      {
+        source: "/opengraph-image",
+        headers: crossOriginImageHeaders,
+      },
+      {
+        source: "/favicon.ico",
+        headers: crossOriginImageHeaders,
+      },
+      {
+        source: "/icon.png",
+        headers: crossOriginImageHeaders,
+      },
+      {
+        source: "/apple-icon.png",
+        headers: crossOriginImageHeaders,
+      },
+      {
+        source: "/icons/:path*",
+        headers: crossOriginImageHeaders,
       },
     ];
   },

@@ -100,12 +100,19 @@
 @layer base {
   * {
     @apply border-border outline-ring/50;
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+
+  *::-webkit-scrollbar {
+    display: none;
+    width: 0;
+    height: 0;
   }
 
   html {
     @apply bg-background text-foreground font-sans;
     min-width: 320px;
-    scrollbar-gutter: stable;
     scroll-behavior: smooth;
   }
 
@@ -139,6 +146,39 @@
   }
 }
 
+@keyframes hero-fade-in {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+.hero-enter-rays,
+.hero-enter-header,
+.hero-enter-content {
+  opacity: 0;
+  animation-name: hero-fade-in;
+  animation-timing-function: cubic-bezier(0.22, 1, 0.36, 1);
+  animation-fill-mode: forwards;
+}
+
+.hero-enter-rays {
+  animation-duration: 800ms;
+}
+
+.hero-enter-header {
+  animation-duration: 700ms;
+  animation-delay: 650ms;
+}
+
+.hero-enter-content {
+  animation-duration: 800ms;
+  animation-delay: 1150ms;
+}
+
 @media (prefers-reduced-motion: reduce) {
   html {
     scroll-behavior: auto;
@@ -151,5 +191,12 @@
     transition-duration: 0.01ms;
     animation-duration: 0.01ms;
     animation-iteration-count: 1;
+  }
+
+  .hero-enter-rays,
+  .hero-enter-header,
+  .hero-enter-content {
+    opacity: 1;
+    animation: none;
   }
 }

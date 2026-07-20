@@ -9,8 +9,6 @@ export default function sitemap(): MetadataRoute.Sitemap {
       lastModified: new Date(
         `${contributionSnapshot.capturedAt}T00:00:00.000Z`,
       ),
-      changeFrequency: "daily",
-      priority: 1,
     },
   ];
 }

@@ -2,7 +2,6 @@ import { GoogleTagManager } from "@next/third-parties/google";
 import { GeistMono } from "geist/font/mono";
 import { GeistSans } from "geist/font/sans";
 import type { Metadata, Viewport } from "next";
-import { ThemeProvider } from "@/components/theme-provider";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { siteConfig } from "@/lib/site";
 import { cn } from "@/lib/utils";
@@ -15,7 +14,6 @@ export const metadata: Metadata = {
     template: `%s — ${siteConfig.name}`,
   },
   description: siteConfig.description,
-  keywords: [...siteConfig.keywords],
   applicationName: siteConfig.name,
   authors: [{ name: "sawet", url: siteConfig.url }],
   creator: "sawet",
@@ -72,11 +70,8 @@ export const metadata: Metadata = {
 };
 
 export const viewport: Viewport = {
-  colorScheme: "light dark",
-  themeColor: [
-    { media: "(prefers-color-scheme: light)", color: "#ffffff" },
-    { media: "(prefers-color-scheme: dark)", color: "#000000" },
-  ],
+  colorScheme: "dark",
+  themeColor: "#000000",
 };
 
 const googleTagManagerId = process.env.NEXT_PUBLIC_GTM_ID?.trim();
@@ -92,25 +87,15 @@ export default function RootLayout({
   return (
     <html
       lang="tr"
-      className={cn("antialiased", GeistSans.variable, GeistMono.variable)}
-      suppressHydrationWarning
+      className={cn("dark antialiased", GeistSans.variable, GeistMono.variable)}
     >
       <body>
         {isGoogleTagManagerEnabled && googleTagManagerId ? (
           <GoogleTagManager gtmId={googleTagManagerId} />
         ) : null}
-        <ThemeProvider
-          attribute="class"
-          defaultTheme="dark"
-          storageKey="tema"
-          disableTransitionOnChange
-          enableColorScheme
-          enableSystem={false}
-        >
-          <TooltipProvider>
-            <main>{children}</main>
-          </TooltipProvider>
-        </ThemeProvider>
+        <TooltipProvider>
+          <main>{children}</main>
+        </TooltipProvider>
       </body>
     </html>
   );
