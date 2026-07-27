@@ -158,6 +158,10 @@ const nextConfig: NextConfig = {
         source: "/pars.png",
         headers: crossOriginImageHeaders,
       },
+      {
+        source: "/images/samet.png",
+        headers: crossOriginImageHeaders,
+      },
     ];
   },
   poweredByHeader: false,
