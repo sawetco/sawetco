@@ -175,8 +175,8 @@ if (isDirectRun) {
         `GitHub katkıları ${status}: ${snapshot.startDate}–${snapshot.endDate}, ${snapshot.total} katkı.`,
       );
     })
-    .catch((error) => {
-      console.error(error instanceof Error ? error.message : error);
+    .catch((_error) => {
+      console.error("GitHub katkıları güncellenemedi.");
       process.exitCode = 1;
     });
 }
