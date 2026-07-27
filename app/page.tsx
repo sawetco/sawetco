@@ -44,8 +44,8 @@ const projects = [
     id: "calculatr-project-title",
     name: "calculatr.app",
     href: "https://calculatr.app",
-    description: "ücretsiz ve hızlı hesaplama araçları.",
-    category: "web uygulaması",
+    description: "Hesaplama Araçları",
+    category: "app",
     year: "2026",
     image: "/projects/calculatr.png",
     imageAlt: "calculatr.app projesinin ana sayfa arayüzü",
@@ -53,10 +53,10 @@ const projects = [
   },
   {
     id: "rdronline-project-title",
-    name: "Red Dead Online Türkiye",
+    name: "rdronline.tr",
     href: "https://rdronline.tr",
-    description: "rehber ve kaynak merkezi.",
-    category: "içerik platformu",
+    description: "Red Dead Online Türkiye",
+    category: "news",
     year: "2026",
     image: "/projects/rdronline.png",
     imageAlt: "Red Dead Online Türkiye web sitesinin ana sayfa arayüzü",
@@ -72,10 +72,10 @@ const projects = [
   },
   {
     id: "esme-project-title",
-    name: "Eşme Belediye Başkanlığı",
+    name: "esme.bel.tr",
     href: "https://esme.bel.tr",
-    description: "resmi web portalı.",
-    category: "kurumsal",
+    description: "Eşme Belediye Başkanlığı",
+    category: "government",
     year: "2025",
     image: "/projects/esme.png",
     imageAlt: "Eşme Belediyesi web sitesinin ana sayfa arayüzü",
@@ -186,11 +186,11 @@ export default function Home() {
           {projects.map((project) => (
             <article key={project.id} aria-labelledby={project.id}>
               <ScrollReveal>
-                <header className="grid grid-cols-1 items-start gap-3 text-center text-lg md:grid-cols-[minmax(0,1fr)_auto] md:gap-6 md:text-left md:text-xl lg:text-2xl">
+                <header className="grid grid-cols-[minmax(0,1fr)_auto] items-end gap-3 text-lg md:text-xl lg:text-2xl">
                   <div className="min-w-0">
                     <h2
                       id={project.id}
-                      className="flex min-w-0 flex-col items-center gap-1 md:flex-row md:gap-1.5"
+                      className="flex min-w-0 flex-col gap-1 md:gap-1.5"
                     >
                       <a
                         className="inline-flex items-center gap-2 whitespace-nowrap font-medium text-foreground"
