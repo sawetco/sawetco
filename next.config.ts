@@ -124,6 +124,7 @@ const crossOriginImageHeaders = securityHeaders.map((header) =>
 );
 
 const nextConfig: NextConfig = {
+  agentRules: false,
   cacheComponents: true,
   images: {
     qualities: [75, 100],
