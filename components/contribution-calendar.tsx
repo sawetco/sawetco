@@ -12,6 +12,7 @@ import {
   contributionSnapshot,
   getContributionWindow,
   getDateInTimeZone,
+  getMillisecondsUntilNextDateInTimeZone,
 } from "@/lib/portfolio-data";
 
 const turkishDateFormatter = new Intl.DateTimeFormat("tr-TR", {
@@ -77,16 +78,44 @@ function LegendCell({ level }: { level: ContributionLevel }) {
 
 export function ContributionCalendar() {
   // Sunucu ve ilk istemci render'ı aynı snapshot tarihini kullanır.
-  // Hydration sonrasında İstanbul tarihine geçerek build olmadan boş günleri ilerletir.
+  // Hydration sonrasında İstanbul tarihine geçer ve yalnızca gün değişiminde yeniden senkronize olur.
   const [endDate, setEndDate] = useState(contributionSnapshot.endDate);
 
   useEffect(() => {
-    const syncCurrentDate = () => setEndDate(getDateInTimeZone());
+    let timeoutId: number | undefined;
 
-    syncCurrentDate();
-    const interval = window.setInterval(syncCurrentDate, 60_000);
+    const syncAndSchedule = () => {
+      const currentDate = getDateInTimeZone();
 
-    return () => window.clearInterval(interval);
+      setEndDate((previousDate) =>
+        currentDate > previousDate ? currentDate : previousDate,
+      );
+
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+
+      timeoutId = window.setTimeout(
+        syncAndSchedule,
+        getMillisecondsUntilNextDateInTimeZone(),
+      );
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        syncAndSchedule();
+      }
+    };
+
+    syncAndSchedule();
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      if (timeoutId !== undefined) {
+        window.clearTimeout(timeoutId);
+      }
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
   }, []);
 
   const { days: contributions, total } = useMemo(

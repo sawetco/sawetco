@@ -19,6 +19,8 @@ export interface ContributionSnapshot {
 
 const TIME_ZONE = "Europe/Istanbul";
 const CONTRIBUTION_WINDOW_DAYS = 365;
+const MAX_TIME_ZONE_DAY_LENGTH_MS = 30 * 60 * 60 * 1000;
+const TIME_ZONE_SEARCH_STEP_MS = 6 * 60 * 60 * 1000;
 
 function isContributionLevel(value: number): value is ContributionLevel {
   return Number.isInteger(value) && value >= 0 && value <= 4;
@@ -47,6 +49,34 @@ export function getDateInTimeZone(
   return `${values.year}-${values.month}-${values.day}`;
 }
 
+export function getMillisecondsUntilNextDateInTimeZone(
+  date = new Date(),
+  timeZone = TIME_ZONE,
+) {
+  const currentDate = getDateInTimeZone(date, timeZone);
+  const startTime = date.getTime();
+  let lowerBound = startTime;
+  let upperBound = startTime + MAX_TIME_ZONE_DAY_LENGTH_MS;
+
+  while (
+    getDateInTimeZone(new Date(upperBound), timeZone) === currentDate
+  ) {
+    upperBound += TIME_ZONE_SEARCH_STEP_MS;
+  }
+
+  while (upperBound - lowerBound > 1000) {
+    const midpoint = Math.floor((lowerBound + upperBound) / 2);
+
+    if (getDateInTimeZone(new Date(midpoint), timeZone) === currentDate) {
+      lowerBound = midpoint;
+    } else {
+      upperBound = midpoint;
+    }
+  }
+
+  return Math.max(1000, upperBound - startTime + 1000);
+}
+
 const days: readonly ContributionDay[] = snapshot.days.map((day) => {
   if (!isContributionLevel(day.level)) {
     throw new Error(`Geçersiz GitHub katkı seviyesi: ${day.level}`);
@@ -69,7 +99,14 @@ export const contributionSnapshot: ContributionSnapshot = {
 };
 
 export function getContributionWindow(endDate: string) {
-  const startDate = addDays(endDate, -(CONTRIBUTION_WINDOW_DAYS - 1));
+  const effectiveEndDate =
+    endDate < contributionSnapshot.endDate
+      ? contributionSnapshot.endDate
+      : endDate;
+  const startDate = addDays(
+    effectiveEndDate,
+    -(CONTRIBUTION_WINDOW_DAYS - 1),
+  );
   const contributionByDate = new Map(
     contributionSnapshot.days.map((day) => [day.date, day]),
   );
