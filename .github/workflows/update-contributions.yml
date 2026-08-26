@@ -36,12 +36,12 @@ jobs:
         shell: bash
         run: |
           if git diff --quiet -- data/github-contributions.json; then
-            echo "Katkı snapshot'ı zaten güncel."
+            echo "Katkı verisinde değişiklik yok."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git add data/github-contributions.json
-          git commit -m "chore: GitHub katkılarını güncelle"
+          git commit -m "chore: update contributions"
           git push origin HEAD:main

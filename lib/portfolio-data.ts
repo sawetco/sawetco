@@ -17,8 +17,34 @@ export interface ContributionSnapshot {
   days: readonly ContributionDay[];
 }
 
+const TIME_ZONE = "Europe/Istanbul";
+const CONTRIBUTION_WINDOW_DAYS = 365;
+
 function isContributionLevel(value: number): value is ContributionLevel {
   return Number.isInteger(value) && value >= 0 && value <= 4;
+}
+
+export function addDays(dateString: string, amount: number) {
+  const date = new Date(`${dateString}T12:00:00.000Z`);
+  date.setUTCDate(date.getUTCDate() + amount);
+  return date.toISOString().slice(0, 10);
+}
+
+export function getDateInTimeZone(
+  date = new Date(),
+  timeZone = TIME_ZONE,
+): string {
+  const parts = new Intl.DateTimeFormat("en-CA", {
+    timeZone,
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+  }).formatToParts(date);
+  const values = Object.fromEntries(
+    parts.map((part) => [part.type, part.value]),
+  );
+
+  return `${values.year}-${values.month}-${values.day}`;
 }
 
 const days: readonly ContributionDay[] = snapshot.days.map((day) => {
@@ -29,7 +55,7 @@ const days: readonly ContributionDay[] = snapshot.days.map((day) => {
   return { ...day, level: day.level };
 });
 
-if (days.length !== 365) {
+if (days.length !== CONTRIBUTION_WINDOW_DAYS) {
   throw new Error(`GitHub katkı snapshot'ı 365 gün içermeli: ${days.length}`);
 }
 
@@ -41,5 +67,30 @@ export const contributionSnapshot: ContributionSnapshot = {
   total: snapshot.total,
   days,
 };
+
+export function getContributionWindow(endDate: string) {
+  const startDate = addDays(endDate, -(CONTRIBUTION_WINDOW_DAYS - 1));
+  const contributionByDate = new Map(
+    contributionSnapshot.days.map((day) => [day.date, day]),
+  );
+  const windowDays = Array.from(
+    { length: CONTRIBUTION_WINDOW_DAYS },
+    (_, index) => {
+      const date = addDays(startDate, index);
+      return (
+        contributionByDate.get(date) ?? {
+          date,
+          count: 0,
+          level: 0 as ContributionLevel,
+        }
+      );
+    },
+  );
+
+  return {
+    days: windowDays,
+    total: windowDays.reduce((sum, day) => sum + day.count, 0),
+  };
+}
 
 export const contributions = contributionSnapshot.days;

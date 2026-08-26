@@ -92,6 +92,50 @@ export function normalizeCalendar(calendar, endDate) {
   };
 }
 
+function parseSnapshot(content) {
+  try {
+    const snapshot = JSON.parse(content);
+
+    if (
+      typeof snapshot?.account !== "string" ||
+      !Array.isArray(snapshot?.days) ||
+      snapshot.days.some(
+        (day) =>
+          typeof day?.date !== "string" ||
+          typeof day?.count !== "number" ||
+          typeof day?.level !== "number",
+      )
+    ) {
+      return null;
+    }
+
+    return snapshot;
+  } catch {
+    return null;
+  }
+}
+
+export function hasContributionDataChanged(currentSnapshot, nextSnapshot) {
+  if (!currentSnapshot || currentSnapshot.account !== nextSnapshot.account) {
+    return true;
+  }
+
+  const currentCountByDate = new Map(
+    currentSnapshot.days.map((day) => [day.date, day.count]),
+  );
+
+  return nextSnapshot.days.some((day) => {
+    const previousCount = currentCountByDate.get(day.date);
+
+    // Pencereye yeni giren boş günler build sebebi değildir.
+    if (previousCount === undefined) {
+      return day.count > 0;
+    }
+
+    return previousCount !== day.count;
+  });
+}
+
 async function fetchCalendar({ account, token, startDate, endDate }) {
   const response = await fetch(GITHUB_API_URL, {
     method: "POST",
@@ -154,13 +198,14 @@ export async function updateContributions({
     total: normalized.total,
     days: normalized.days,
   };
-  const nextContent = `${JSON.stringify(snapshot, null, 2)}\n`;
   const currentContent = await readFile(OUTPUT_URL, "utf8").catch(() => "");
+  const currentSnapshot = parseSnapshot(currentContent);
 
-  if (currentContent === nextContent) {
+  if (!hasContributionDataChanged(currentSnapshot, snapshot)) {
     return { changed: false, snapshot };
   }
 
+  const nextContent = `${JSON.stringify(snapshot, null, 2)}\n`;
   await writeFile(OUTPUT_URL, nextContent, "utf8");
   return { changed: true, snapshot };
 }
@@ -170,7 +215,7 @@ const isDirectRun = process.argv[1] === fileURLToPath(import.meta.url);
 if (isDirectRun) {
   updateContributions()
     .then(({ changed, snapshot }) => {
-      const status = changed ? "güncellendi" : "zaten güncel";
+      const status = changed ? "güncellendi" : "değişiklik yok";
       console.log(
         `GitHub katkıları ${status}: ${snapshot.startDate}–${snapshot.endDate}, ${snapshot.total} katkı.`,
       );

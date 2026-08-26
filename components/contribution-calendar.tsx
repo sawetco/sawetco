@@ -1,12 +1,17 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
 import {
   Tooltip,
   TooltipContent,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import {
+  type ContributionDay,
   type ContributionLevel,
   contributionSnapshot,
-  contributions,
+  getContributionWindow,
+  getDateInTimeZone,
 } from "@/lib/portfolio-data";
 
 const turkishDateFormatter = new Intl.DateTimeFormat("tr-TR", {
@@ -21,29 +26,31 @@ const monthFormatter = new Intl.DateTimeFormat("tr-TR", {
   timeZone: "UTC",
 });
 
-const rawMonthLabels = contributions.flatMap((day, index) => {
-  const previousMonth =
-    index > 0 ? contributions[index - 1].date.slice(0, 7) : null;
-  const currentMonth = day.date.slice(0, 7);
+function getMonthLabels(contributions: readonly ContributionDay[]) {
+  const rawMonthLabels = contributions.flatMap((day, index) => {
+    const previousMonth =
+      index > 0 ? contributions[index - 1].date.slice(0, 7) : null;
+    const currentMonth = day.date.slice(0, 7);
 
-  if (previousMonth === currentMonth) {
-    return [];
-  }
+    if (previousMonth === currentMonth) {
+      return [];
+    }
 
-  const rawLabel = monthFormatter
-    .format(new Date(`${day.date}T00:00:00.000Z`))
-    .replace(".", "");
-  const label =
-    rawLabel.charAt(0).toLocaleUpperCase("tr-TR") + rawLabel.slice(1);
+    const rawLabel = monthFormatter
+      .format(new Date(`${day.date}T00:00:00.000Z`))
+      .replace(".", "");
+    const label =
+      rawLabel.charAt(0).toLocaleUpperCase("tr-TR") + rawLabel.slice(1);
 
-  return [{ label, column: Math.floor(index / 7) + 1 }];
-});
+    return [{ label, column: Math.floor(index / 7) + 1 }];
+  });
 
-const monthLabels = rawMonthLabels.filter((month, index) => {
-  const nextMonth = rawMonthLabels[index + 1];
+  return rawMonthLabels.filter((month, index) => {
+    const nextMonth = rawMonthLabels[index + 1];
 
-  return !nextMonth || nextMonth.column - month.column >= 3;
-});
+    return !nextMonth || nextMonth.column - month.column >= 3;
+  });
+}
 
 function contributionLabel(date: string, count: number) {
   const formattedDate = turkishDateFormatter.format(
@@ -69,6 +76,28 @@ function LegendCell({ level }: { level: ContributionLevel }) {
 }
 
 export function ContributionCalendar() {
+  // Sunucu ve ilk istemci render'ı aynı snapshot tarihini kullanır.
+  // Hydration sonrasında İstanbul tarihine geçerek build olmadan boş günleri ilerletir.
+  const [endDate, setEndDate] = useState(contributionSnapshot.endDate);
+
+  useEffect(() => {
+    const syncCurrentDate = () => setEndDate(getDateInTimeZone());
+
+    syncCurrentDate();
+    const interval = window.setInterval(syncCurrentDate, 60_000);
+
+    return () => window.clearInterval(interval);
+  }, []);
+
+  const { days: contributions, total } = useMemo(
+    () => getContributionWindow(endDate),
+    [endDate],
+  );
+  const monthLabels = useMemo(
+    () => getMonthLabels(contributions),
+    [contributions],
+  );
+
   return (
     <figure
       className="mx-auto mt-14 w-full min-w-0 select-none sm:mt-20"
@@ -114,9 +143,7 @@ export function ContributionCalendar() {
 
           <figcaption className="mt-2.5 flex items-center justify-between gap-4 text-xs text-muted-foreground">
             <div>
-              <strong className="font-medium text-foreground">
-                {contributionSnapshot.total}
-              </strong>{" "}
+              <strong className="font-medium text-foreground">{total}</strong>{" "}
               katkı
             </div>
             <div
