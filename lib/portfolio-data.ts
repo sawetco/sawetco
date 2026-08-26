@@ -58,9 +58,7 @@ export function getMillisecondsUntilNextDateInTimeZone(
   let lowerBound = startTime;
   let upperBound = startTime + MAX_TIME_ZONE_DAY_LENGTH_MS;
 
-  while (
-    getDateInTimeZone(new Date(upperBound), timeZone) === currentDate
-  ) {
+  while (getDateInTimeZone(new Date(upperBound), timeZone) === currentDate) {
     upperBound += TIME_ZONE_SEARCH_STEP_MS;
   }
 
@@ -103,10 +101,7 @@ export function getContributionWindow(endDate: string) {
     endDate < contributionSnapshot.endDate
       ? contributionSnapshot.endDate
       : endDate;
-  const startDate = addDays(
-    effectiveEndDate,
-    -(CONTRIBUTION_WINDOW_DAYS - 1),
-  );
+  const startDate = addDays(effectiveEndDate, -(CONTRIBUTION_WINDOW_DAYS - 1));
   const contributionByDate = new Map(
     contributionSnapshot.days.map((day) => [day.date, day]),
   );
