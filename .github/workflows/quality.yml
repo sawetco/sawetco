@@ -5,19 +5,78 @@ on:
   push:
     branches:
       - main
-    paths-ignore:
-      - data/github-contributions.json
+  workflow_run:
+    workflows:
+      - GitHub katkılarını güncelle
+    types:
+      - completed
+    branches:
+      - main
 
 permissions:
   contents: read
 
 concurrency:
   group: quality-${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  changes:
+    name: Değişiklikleri sınıflandır
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    outputs:
+      heavy: ${{ steps.classify.outputs.heavy }}
+    steps:
+      - name: Depoyu al
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          fetch-depth: 0
+
+      - name: Değişen dosyaları sınıflandır
+        id: classify
+        shell: bash
+        env:
+          PR_BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          PUSH_BEFORE_SHA: ${{ github.event.before }}
+          WORKFLOW_BASE_SHA: ${{ github.event.workflow_run.head_sha }}
+        run: |
+          if [ "$GITHUB_EVENT_NAME" = "pull_request" ]; then
+            base_sha="$PR_BASE_SHA"
+          elif [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            base_sha="$WORKFLOW_BASE_SHA"
+          else
+            base_sha="$PUSH_BEFORE_SHA"
+          fi
+
+          if [ -z "$base_sha" ] || [[ "$base_sha" =~ ^0+$ ]]; then
+            files="$(git show --pretty='' --name-only "$GITHUB_SHA")"
+          else
+            files="$(git diff --name-only "$base_sha" "$GITHUB_SHA")"
+          fi
+
+          heavy=true
+          if [ -z "$files" ] && [ "$GITHUB_EVENT_NAME" = "workflow_run" ]; then
+            heavy=false
+          elif [ -n "$files" ]; then
+            heavy=false
+            while IFS= read -r path; do
+              case "$path" in
+                data/github-contributions.json) ;;
+                *)
+                  heavy=true
+                  break
+                  ;;
+              esac
+            done <<< "$files"
+          fi
+
+          echo "heavy=$heavy" >> "$GITHUB_OUTPUT"
+
   quality:
     name: quality
+    needs: changes
+    if: needs.changes.outputs.heavy == 'true'
     runs-on: ubuntu-latest
     timeout-minutes: 15
 
@@ -64,3 +123,42 @@ jobs:
 
       - name: Üretim derlemesini doğrula
         run: pnpm build
+
+  deployment-gate:
+    name: Deployment gate
+    needs:
+      - changes
+      - quality
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Gerekli kontrolleri doğrula
+        shell: bash
+        env:
+          CHANGES_RESULT: ${{ needs.changes.result }}
+          HEAVY_REQUIRED: ${{ needs.changes.outputs.heavy }}
+          QUALITY_RESULT: ${{ needs.quality.result }}
+        run: |
+          if [ "$CHANGES_RESULT" != "success" ]; then
+            echo "Değişiklik sınıflandırması başarıyla tamamlanmadı."
+            exit 1
+          fi
+
+          case "$HEAVY_REQUIRED" in
+            true)
+              if [ "$QUALITY_RESULT" != "success" ]; then
+                echo "Tam kalite kontrolleri başarıyla tamamlanmadı."
+                exit 1
+              fi
+              ;;
+            false)
+              echo "Yalnızca katkı verisi değişti; tam kalite kontrolleri gerekli değildi."
+              ;;
+            *)
+              echo "Beklenmeyen değişiklik sınıflandırması: $HEAVY_REQUIRED"
+              exit 1
+              ;;
+          esac
+
+          echo "Deployment gate passed."
