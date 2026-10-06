@@ -113,7 +113,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Güvenlik denetimi
-        run: pnpm audit --prod
+        run: pnpm audit
 
       - name: Kod kalitesini denetle
         run: pnpm lint
