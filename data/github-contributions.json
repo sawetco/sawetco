@@ -1,15 +1,10 @@
 {
   "account": "sawetco",
-  "startDate": "2025-10-09",
-  "endDate": "2026-10-08",
-  "capturedAt": "2026-10-08",
-  "total": 878,
+  "startDate": "2025-10-10",
+  "endDate": "2026-10-09",
+  "capturedAt": "2026-10-09",
+  "total": 882,
   "days": [
-    {
-      "date": "2025-10-09",
-      "count": 5,
-      "level": 1
-    },
     {
       "date": "2025-10-10",
       "count": 1,
@@ -1827,8 +1822,13 @@
     },
     {
       "date": "2026-10-08",
-      "count": 1,
-      "level": 1
+      "count": 10,
+      "level": 2
+    },
+    {
+      "date": "2026-10-09",
+      "count": 0,
+      "level": 0
     }
   ]
 }
