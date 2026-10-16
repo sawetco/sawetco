@@ -47,7 +47,10 @@ test("boş günler güvenle çizilir", () => {
   assert.equal(stats.total, 0);
   assert.equal(stats.activeDays, 0);
   const svg = renderStatsSvg(stats);
-  assert.match(svg, /<title id="title">sawetco \/ github istatistikleri<\/title>/);
+  assert.match(
+    svg,
+    /<title id="title">sawetco \/ github istatistikleri<\/title>/,
+  );
   assert.match(svg, /0 katkı, 0 aktif gün, son 30 günde 0 katkı/);
   assert.doesNotMatch(svg, /<text[^>]*>github \/ istatistikler<\/text>/);
   assert.doesNotMatch(svg, /<rect\b/);
