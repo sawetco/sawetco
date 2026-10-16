@@ -4,10 +4,13 @@ import { calculateStats, renderStatsSvg } from "./render-readme-stats.mjs";
 
 function fixture(counts) {
   const start = Date.UTC(2026, 0, 1);
-  return { account: "sawetco", days: counts.map((count, index) => ({
-    date: new Date(start + index * 86_400_000).toISOString().slice(0, 10),
-    count,
-  })) };
+  return {
+    account: "sawetco",
+    days: counts.map((count, index) => ({
+      date: new Date(start + index * 86_400_000).toISOString().slice(0, 10),
+      count,
+    })),
+  };
 }
 
 test("katkı metrikleri doğru hesaplanır", () => {
@@ -19,15 +22,24 @@ test("katkı metrikleri doğru hesaplanır", () => {
   assert.equal(stats.total, 24);
   assert.equal(stats.activeDays, 3);
   assert.equal(stats.recent30, 12);
-  assert.equal(stats.weekly.reduce((sum, item) => sum + item, 0), 12);
+  assert.equal(
+    stats.weekly.reduce((sum, item) => sum + item, 0),
+    12,
+  );
   assert.match(renderStatsSvg(stats), /<svg /);
   assert.match(renderStatsSvg(stats), /24 katkı/);
 });
 
 test("geçersiz veriler reddedilir", () => {
   assert.throws(() => calculateStats(fixture([-1])), /geçersiz/);
-  assert.throws(() => calculateStats({ account: "sawetco", days: [] }), /eksik/);
-  assert.throws(() => calculateStats({ account: "<script>", days: fixture([1]).days }), /Geçersiz/);
+  assert.throws(
+    () => calculateStats({ account: "sawetco", days: [] }),
+    /eksik/,
+  );
+  assert.throws(
+    () => calculateStats({ account: "<script>", days: fixture([1]).days }),
+    /Geçersiz/,
+  );
 });
 
 test("boş günler güvenle çizilir", () => {
