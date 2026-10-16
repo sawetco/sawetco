@@ -52,42 +52,52 @@ export function calculateStats(snapshot) {
 export function renderStatsSvg(stats) {
   const { account, total, activeDays, recent30, weekly } = stats;
   const maxWeekly = Math.max(1, ...weekly);
+
   const bars = weekly
     .map((count, index) => {
       const height =
-        count > 0 ? Math.max(2, Math.round((count / maxWeekly) * 43)) : 0;
-      const x = 572 + index * 13;
-      const y = 101 - height;
+        count > 0 ? Math.max(3, Math.round((count / maxWeekly) * 34)) : 0;
+      const x = 594 + index * 13;
+      const y = 70 - height;
+
       return height
-        ? `<rect x="${x}" y="${y}" width="8" height="${height}" rx="2" fill="#929292"/>`
+        ? `<rect x="${x}" y="${y}" width="8" height="${height}" rx="2" fill="#c9d1d9" />`
         : "";
     })
     .join("");
+
   const format = (value) => new Intl.NumberFormat("tr-TR").format(value);
   const accessibleDescription = `${format(total)} katkı, ${activeDays} aktif gün, son 30 günde ${format(recent30)} katkı.`;
-  return `<svg xmlns="http://www.w3.org/2000/svg" width="760" height="155" viewBox="0 0 760 155" role="img" aria-labelledby="title desc">
-<title id="title">${xmlEscape(account)} / github istatistikleri</title>
-<desc id="desc">${xmlEscape(accessibleDescription)} Son 12 haftalık katkı grafiği.</desc>
-<g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">
-  <text x="16" y="21" font-size="12" font-weight="600" fill="#777777">github / istatistikler</text>
-  <text x="16" y="52" font-size="10" fill="#999999">son 365 gün</text>
-  <text x="16" y="93" font-size="33" font-weight="700" fill="#858585">${format(total)}</text>
-  <text x="16" y="112" font-size="11" fill="#999999">toplam katkı</text>
-  <line x1="198" y1="42" x2="198" y2="112" stroke="#a3a3a3" stroke-opacity=".35"/>
-  <text x="224" y="52" font-size="10" fill="#999999">son 365 gün</text>
-  <text x="224" y="93" font-size="33" font-weight="700" fill="#858585">${format(activeDays)}</text>
-  <text x="224" y="112" font-size="11" fill="#999999">aktif gün</text>
-  <line x1="379" y1="42" x2="379" y2="112" stroke="#a3a3a3" stroke-opacity=".35"/>
-  <text x="405" y="52" font-size="10" fill="#999999">son 30 gün</text>
-  <text x="405" y="93" font-size="33" font-weight="700" fill="#858585">${format(recent30)}</text>
-  <text x="405" y="112" font-size="11" fill="#999999">katkı</text>
-  <line x1="546" y1="42" x2="546" y2="112" stroke="#a3a3a3" stroke-opacity=".35"/>
-  <text x="572" y="52" font-size="10" fill="#999999">son 12 hafta</text>
-  <line x1="571" y1="101.5" x2="723" y2="101.5" stroke="#a3a3a3" stroke-opacity=".25"/>
-  ${bars}
-  <text x="16" y="142" font-size="10" fill="#999999">GitHub katkı takvimi verileri · özel katkıların görünürlük ayarına tabidir</text>
-</g>
-</svg>\n`;
+
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="760" height="92" viewBox="0 0 760 92" role="img" aria-labelledby="title desc">
+  <title id="title">${xmlEscape(account)} / github istatistikleri</title>
+  <desc id="desc">${xmlEscape(accessibleDescription)} Son 12 haftalık katkı grafiği.</desc>
+
+  <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">
+    <text x="0" y="16" font-size="10" fill="#8b949e">son 365 gün</text>
+    <text x="0" y="54" font-size="32" font-weight="700" fill="#e6edf3">${format(total)}</text>
+    <text x="0" y="74" font-size="11" fill="#8b949e">toplam katkı</text>
+
+    <line x1="182" y1="10" x2="182" y2="74" stroke="#30363d" />
+
+    <text x="206" y="16" font-size="10" fill="#8b949e">son 365 gün</text>
+    <text x="206" y="54" font-size="32" font-weight="700" fill="#e6edf3">${format(activeDays)}</text>
+    <text x="206" y="74" font-size="11" fill="#8b949e">aktif gün</text>
+
+    <line x1="388" y1="10" x2="388" y2="74" stroke="#30363d" />
+
+    <text x="412" y="16" font-size="10" fill="#8b949e">son 30 gün</text>
+    <text x="412" y="54" font-size="32" font-weight="700" fill="#e6edf3">${format(recent30)}</text>
+    <text x="412" y="74" font-size="11" fill="#8b949e">katkı</text>
+
+    <line x1="570" y1="10" x2="570" y2="74" stroke="#30363d" />
+
+    <text x="594" y="16" font-size="10" fill="#8b949e">son 12 hafta</text>
+    <line x1="594" y1="70.5" x2="754" y2="70.5" stroke="#30363d" />
+    ${bars}
+  </g>
+</svg>
+`;
 }
 export async function updateReadmeStats({
   input = INPUT_URL,
