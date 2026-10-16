@@ -65,7 +65,7 @@ export function renderStatsSvg(stats) {
     .join("");
   const format = (value) => new Intl.NumberFormat("tr-TR").format(value);
   const accessibleDescription = `${format(total)} katkı, ${activeDays} aktif gün, son 30 günde ${format(recent30)} katkı.`;
-    return `<svg xmlns="http://www.w3.org/2000/svg" width="760" height="155" viewBox="0 0 760 155" role="img" aria-labelledby="title desc">
+  return `<svg xmlns="http://www.w3.org/2000/svg" width="760" height="155" viewBox="0 0 760 155" role="img" aria-labelledby="title desc">
 <title id="title">${xmlEscape(account)} / github istatistikleri</title>
 <desc id="desc">${xmlEscape(accessibleDescription)} Son 12 haftalık katkı grafiği.</desc>
 <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">
