@@ -5,6 +5,11 @@ on:
     - cron: "0 0 * * *"
       timezone: "Europe/Istanbul"
   workflow_dispatch:
+  push:
+    branches:
+      - main
+    paths:
+      - README.md
 
 permissions:
   contents: write
