@@ -32,18 +32,21 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           GITHUB_USERNAME: sawetco
 
+      - name: README katkı istatistiklerini üret
+        run: node scripts/render-readme-stats.mjs
+
       - name: Değişiklik varsa commit et
         shell: bash
         run: |
-          if git diff --quiet -- data/github-contributions.json; then
+          if git diff --quiet -- data/github-contributions.json .github/readme-stats.svg; then
             echo "Katkı verisinde değişiklik yok."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add data/github-contributions.json
-          git commit -m "chore: update contributions"
+          git add data/github-contributions.json .github/readme-stats.svg
+          git commit -m "chore: update contributions and readme stats"
           # GitHub tarafındaki geçici push/commit_refs hatalarında yeniden dene.
           # Kalıcı yetki veya branch koruma hatalarını gizleme.
           for attempt in 1 2 3; do
