@@ -1,7 +1,3 @@
-<a href="https://sawet.co">
-  <img src="./public/images/samet.png" width="72" height="72" alt="sawet" />
-</a>
-
 # sawet
 
 **full stack developer**  
