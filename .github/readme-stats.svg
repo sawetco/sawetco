@@ -1,28 +1,28 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="760" height="92" viewBox="0 0 760 92" role="img" aria-labelledby="title desc">
   <title id="title">sawetco / github istatistikleri</title>
-  <desc id="desc">1.091 katkı, 167 aktif gün, son 30 günde 279 katkı. Son 12 haftalık katkı grafiği.</desc>
+  <desc id="desc">1.103 katkı, 168 aktif gün, son 30 günde 292 katkı. Son 12 haftalık katkı grafiği.</desc>
 
   <g font-family="-apple-system,BlinkMacSystemFont,Segoe UI,Arial,sans-serif">
     <text x="0" y="16" font-size="10" fill="#8b949e">son 365 gün</text>
-    <text x="0" y="54" font-size="32" font-weight="700" fill="#e6edf3">1.091</text>
+    <text x="0" y="54" font-size="32" font-weight="700" fill="#e6edf3">1.103</text>
     <text x="0" y="74" font-size="11" fill="#8b949e">toplam katkı</text>
 
     <line x1="182" y1="10" x2="182" y2="74" stroke="#30363d" />
 
     <text x="206" y="16" font-size="10" fill="#8b949e">son 365 gün</text>
-    <text x="206" y="54" font-size="32" font-weight="700" fill="#e6edf3">167</text>
+    <text x="206" y="54" font-size="32" font-weight="700" fill="#e6edf3">168</text>
     <text x="206" y="74" font-size="11" fill="#8b949e">aktif gün</text>
 
     <line x1="388" y1="10" x2="388" y2="74" stroke="#30363d" />
 
     <text x="412" y="16" font-size="10" fill="#8b949e">son 30 gün</text>
-    <text x="412" y="54" font-size="32" font-weight="700" fill="#e6edf3">279</text>
+    <text x="412" y="54" font-size="32" font-weight="700" fill="#e6edf3">292</text>
     <text x="412" y="74" font-size="11" fill="#8b949e">katkı</text>
 
     <line x1="570" y1="10" x2="570" y2="74" stroke="#30363d" />
 
     <text x="594" y="16" font-size="10" fill="#8b949e">son 12 hafta</text>
     <line x1="594" y1="70.5" x2="754" y2="70.5" stroke="#30363d" />
-    <rect x="594" y="65" width="8" height="5" rx="2" fill="#c9d1d9" /><rect x="607" y="61" width="8" height="9" rx="2" fill="#c9d1d9" /><rect x="620" y="64" width="8" height="6" rx="2" fill="#c9d1d9" /><rect x="633" y="62" width="8" height="8" rx="2" fill="#c9d1d9" /><rect x="646" y="51" width="8" height="19" rx="2" fill="#c9d1d9" /><rect x="659" y="64" width="8" height="6" rx="2" fill="#c9d1d9" /><rect x="672" y="64" width="8" height="6" rx="2" fill="#c9d1d9" /><rect x="685" y="67" width="8" height="3" rx="2" fill="#c9d1d9" /><rect x="698" y="66" width="8" height="4" rx="2" fill="#c9d1d9" /><rect x="711" y="36" width="8" height="34" rx="2" fill="#c9d1d9" /><rect x="724" y="42" width="8" height="28" rx="2" fill="#c9d1d9" /><rect x="737" y="59" width="8" height="11" rx="2" fill="#c9d1d9" />
+    <rect x="594" y="65" width="8" height="5" rx="2" fill="#c9d1d9" /><rect x="607" y="61" width="8" height="9" rx="2" fill="#c9d1d9" /><rect x="620" y="65" width="8" height="5" rx="2" fill="#c9d1d9" /><rect x="633" y="61" width="8" height="9" rx="2" fill="#c9d1d9" /><rect x="646" y="54" width="8" height="16" rx="2" fill="#c9d1d9" /><rect x="659" y="64" width="8" height="6" rx="2" fill="#c9d1d9" /><rect x="672" y="64" width="8" height="6" rx="2" fill="#c9d1d9" /><rect x="685" y="67" width="8" height="3" rx="2" fill="#c9d1d9" /><rect x="698" y="67" width="8" height="3" rx="2" fill="#c9d1d9" /><rect x="711" y="36" width="8" height="34" rx="2" fill="#c9d1d9" /><rect x="724" y="45" width="8" height="25" rx="2" fill="#c9d1d9" /><rect x="737" y="59" width="8" height="11" rx="2" fill="#c9d1d9" />
   </g>
 </svg>
