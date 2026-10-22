@@ -6,6 +6,9 @@ on:
     paths:
       - 'pnpm-workspace.yaml'
       - '.github/workflows/security-lockfile-refresh.yml'
+  pull_request:
+    branches:
+      - main
   workflow_dispatch:
 
 permissions:
