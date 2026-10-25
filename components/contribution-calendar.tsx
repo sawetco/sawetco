@@ -93,7 +93,7 @@ export function ContributionCalendar() {
       .then((latest) => {
         if (!controller.signal.aborted && isContributionSnapshot(latest)) {
           setCurrentSnapshot((previous) =>
-            Date.parse(latest.capturedAt) > Date.parse(previous.capturedAt)
+            Date.parse(latest.capturedAt) >= Date.parse(previous.capturedAt)
               ? latest
               : previous,
           );
