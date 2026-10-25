@@ -13,6 +13,7 @@ import {
   getContributionWindow,
   getDateInTimeZone,
   getMillisecondsUntilNextDateInTimeZone,
+  isContributionSnapshot,
 } from "@/lib/portfolio-data";
 
 const turkishDateFormatter = new Intl.DateTimeFormat("tr-TR", {
@@ -80,6 +81,29 @@ export function ContributionCalendar() {
   // Sunucu ve ilk istemci render'ı aynı snapshot tarihini kullanır.
   // Hydration sonrasında İstanbul tarihine geçer ve yalnızca gün değişiminde yeniden senkronize olur.
   const [endDate, setEndDate] = useState(contributionSnapshot.endDate);
+  const [currentSnapshot, setCurrentSnapshot] = useState(contributionSnapshot);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    fetch("/api/contributions", { signal: controller.signal })
+      .then((response) => {
+        if (!response.ok) throw new Error("Contribution snapshot unavailable");
+        return response.json() as Promise<unknown>;
+      })
+      .then((latest) => {
+        if (!controller.signal.aborted && isContributionSnapshot(latest)) {
+          setCurrentSnapshot((previous) =>
+            Date.parse(latest.capturedAt) > Date.parse(previous.capturedAt)
+              ? latest
+              : previous,
+          );
+        }
+      })
+      .catch(() => {
+        // The bundled snapshot remains available when the upstream is unavailable.
+      });
+    return () => controller.abort();
+  }, []);
 
   useEffect(() => {
     let timeoutId: number | undefined;
@@ -119,8 +143,8 @@ export function ContributionCalendar() {
   }, []);
 
   const { days: contributions, total } = useMemo(
-    () => getContributionWindow(endDate),
-    [endDate],
+    () => getContributionWindow(endDate, currentSnapshot),
+    [endDate, currentSnapshot],
   );
   const monthLabels = useMemo(
     () => getMonthLabels(contributions),

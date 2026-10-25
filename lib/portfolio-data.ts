@@ -96,14 +96,48 @@ export const contributionSnapshot: ContributionSnapshot = {
   days,
 };
 
-export function getContributionWindow(endDate: string) {
+export function isContributionSnapshot(
+  value: unknown,
+): value is ContributionSnapshot {
+  if (!value || typeof value !== "object") return false;
+  const candidate = value as Partial<ContributionSnapshot>;
+  if (
+    candidate.account !== contributionSnapshot.account ||
+    typeof candidate.startDate !== "string" ||
+    typeof candidate.endDate !== "string" ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(candidate.startDate) ||
+    !/^\d{4}-\d{2}-\d{2}$/.test(candidate.endDate) ||
+    !Number.isFinite(Date.parse(`${candidate.endDate}T12:00:00Z`)) ||
+    addDays(candidate.endDate, -(CONTRIBUTION_WINDOW_DAYS - 1)) !==
+      candidate.startDate ||
+    typeof candidate.capturedAt !== "string" ||
+    !Number.isFinite(Date.parse(candidate.capturedAt)) ||
+    !Number.isSafeInteger(candidate.total) ||
+    (candidate.total ?? -1) < 0 ||
+    !Array.isArray(candidate.days) ||
+    candidate.days.length !== CONTRIBUTION_WINDOW_DAYS
+  )
+    return false;
+  return candidate.days.every(
+    (day, index) =>
+      day &&
+      typeof day === "object" &&
+      day.date === addDays(candidate.startDate as string, index) &&
+      Number.isSafeInteger(day.count) &&
+      day.count >= 0 &&
+      isContributionLevel(day.level),
+  );
+}
+
+export function getContributionWindow(
+  endDate: string,
+  currentSnapshot: ContributionSnapshot = contributionSnapshot,
+) {
   const effectiveEndDate =
-    endDate < contributionSnapshot.endDate
-      ? contributionSnapshot.endDate
-      : endDate;
+    endDate < currentSnapshot.endDate ? currentSnapshot.endDate : endDate;
   const startDate = addDays(effectiveEndDate, -(CONTRIBUTION_WINDOW_DAYS - 1));
   const contributionByDate = new Map(
-    contributionSnapshot.days.map((day) => [day.date, day]),
+    currentSnapshot.days.map((day) => [day.date, day]),
   );
   const windowDays = Array.from(
     { length: CONTRIBUTION_WINDOW_DAYS },
