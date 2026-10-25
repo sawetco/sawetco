@@ -127,6 +127,9 @@ jobs:
       - name: Üretim derlemesini doğrula
         run: pnpm build
 
+      - name: Üretim HTTP ve API testleri
+        run: pnpm test:smoke
+
   deployment-gate:
     name: Deployment gate
     needs:
