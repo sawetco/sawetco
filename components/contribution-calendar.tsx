@@ -111,9 +111,13 @@ export function ContributionCalendar() {
     const syncAndSchedule = () => {
       const currentDate = getDateInTimeZone();
 
-      setEndDate((previousDate) =>
-        currentDate > previousDate ? currentDate : previousDate,
-      );
+      setEndDate((previousDate) => {
+        if (currentDate > previousDate) {
+          return currentDate;
+        }
+
+        return previousDate;
+      });
 
       if (timeoutId !== undefined) {
         window.clearTimeout(timeoutId);
