@@ -6,10 +6,13 @@ const runtimeDataFiles = new Set([
 ]);
 
 try {
-  const previous = process.env.VERCEL_GIT_PREVIOUS_SHA || "HEAD^";
-  const files = execFileSync("git", ["diff", "--name-only", previous, "HEAD"], {
-    encoding: "utf8",
-  })
+  // The previous deployed SHA may lag behind HEAD when earlier builds were skipped.
+  // Classify only the latest commit to avoid redundant contribution-only builds.
+  const files = execFileSync(
+    "git",
+    ["show", "--format=", "--name-only", "--diff-merges=first-parent", "HEAD"],
+    { encoding: "utf8" },
+  )
     .trim()
     .split("\n")
     .filter(Boolean);
@@ -17,7 +20,7 @@ try {
     files.length > 0 && files.every((file) => runtimeDataFiles.has(file));
   console.log(
     onlyRuntimeData
-      ? "Contribution data only; serving updated data without a build."
+      ? "Contribution data only; skipping build."
       : "Application changes; build required.",
   );
   process.exit(onlyRuntimeData ? 0 : 1);
