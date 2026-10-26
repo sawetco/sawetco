@@ -124,6 +124,9 @@ jobs:
       - name: README istatistik testleri
         run: node --test scripts/render-readme-stats.test.mjs
 
+      - name: Vercel derleme atlama testleri
+        run: node --test scripts/vercel-ignore-build.test.mjs
+
       - name: Üretim derlemesini doğrula
         run: pnpm build
 
