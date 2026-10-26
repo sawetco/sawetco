@@ -1,6 +1,6 @@
 # sawet
 
-**full stack developer**  
+**full stack developer**
 
 web'de bir şeyler tasarlıyor ve geliştiriyorum · google yzta 2026 kaggle datathon #1 <a href="https://github.com/sawetco/yzta-datathon-2026">↗</a>
 
