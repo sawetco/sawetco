@@ -12,7 +12,7 @@ on:
       - README.md
 
 permissions:
-  contents: write
+  contents: read
 
 concurrency:
   group: update-github-contributions
@@ -21,7 +21,12 @@ concurrency:
 jobs:
   update:
     runs-on: ubuntu-latest
-    timeout-minutes: 5
+    timeout-minutes: 10
+    permissions:
+      contents: write
+      pull-requests: write
+      actions: write
+      issues: write
     steps:
       - name: Depoyu al
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
@@ -40,31 +45,24 @@ jobs:
       - name: README katkı istatistiklerini üret
         run: node scripts/render-readme-stats.mjs
 
-      - name: Değişiklik varsa commit et
-        shell: bash
+      - name: Create or refresh the tested contribution pull request
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
-          if git diff --quiet -- data/github-contributions.json .github/readme-stats.svg; then
-            echo "Katkı verisinde değişiklik yok."
-            exit 0
-          fi
-
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          set -euo pipefail
+          if git diff --quiet -- data/github-contributions.json .github/readme-stats.svg; then exit 0; fi
+          branch=automation/contributions
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git checkout -b "$branch"
           git add data/github-contributions.json .github/readme-stats.svg
-          git commit -m "chore: update contributions and readme stats"
-          # GitHub tarafındaki geçici push/commit_refs hatalarında yeniden dene.
-          # Kalıcı yetki veya branch koruma hatalarını gizleme.
-          for attempt in 1 2 3; do
-            if git push origin HEAD:main; then
-              echo "Katkı verisi main dalına gönderildi."
-              exit 0
-            fi
-
-            if [ "$attempt" -eq 3 ]; then
-              echo "::error::GitHub push işlemi 3 denemede başarısız oldu."
-              exit 1
-            fi
-
-            echo "::warning::Push başarısız (deneme $attempt/3); yeniden denenecek."
-            sleep $((attempt * 15))
-          done
+          git commit -m 'chore: update contributions and readme stats'
+          remote="$(git ls-remote origin "refs/heads/$branch" | cut -f1)"
+          git push --force-with-lease="refs/heads/$branch:$remote" origin "HEAD:refs/heads/$branch"
+          if ! gh pr view "$branch" --json number >/dev/null 2>&1; then
+            gh pr create --head "$branch" --base main --title 'chore: update contributions and readme stats' --body 'Generated contribution assets. Merged automatically only after source and security checks pass.'
+          fi
+          gh label create automation:contributions --color 1d76db --force
+          gh pr edit "$branch" --add-label automation:contributions
+          gh workflow run quality.yml --ref "$branch"
+          gh workflow run security.yml --ref "$branch"

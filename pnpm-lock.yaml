@@ -5,6 +5,7 @@ settings:
   excludeLinksFromLockfile: false
 
 overrides:
+  systeminformation: 5.33.16
   postcss: 8.5.26
   source-map-js: 1.2.2
   '@hono/node-server': 2.1.3
@@ -19,6 +20,9 @@ overrides:
   browserslist@<=4.28.6: ^4.28.7
   zod@>=3.25.0 <4.6.6: 4.6.6
   body-parser@>=2.0.0 <2.4.0: 2.4.0
+
+patchedDependencies:
+  deepmerge@4.3.1: f441e75bc0c393b1f00d53c5bc43f997cb99c3af563c30b39aaf22eaf847e438
 
 importers:
 
@@ -2282,8 +2286,8 @@ packages:
       babel-plugin-macros:
         optional: true
 
-  systeminformation@5.33.15:
-    resolution: {integrity: sha512-s5RloL0F7xhN0ZjfHtLGnbf7EW74EI0N8NFL+1xR7Oxz9QA33obNZsl7lyfnJOhN04E/kGFPoJPlvY7TZ5fzmw==}
+  systeminformation@5.33.16:
+    resolution: {integrity: sha512-R+Lh69IJXfJj6bfyH1In5cIR9FTr4hBS39YvlZHZjsK1p9cuELPq7hplZZIb56ZESMMb+DzdKqqE6Iomi01Mvg==}
     engines: {node: '>=10.0.0'}
     os: [darwin, linux, win32, freebsd, openbsd, netbsd, sunos, android]
     hasBin: true
@@ -2724,7 +2728,7 @@ snapshots:
       object-treeify: 1.1.33
       open: 8.4.2
       picomatch: 4.0.7
-      systeminformation: 5.33.15
+      systeminformation: 5.33.16
       undici: 7.30.1
       which: 4.0.0
       yocto-spinner: 1.2.2
@@ -3112,7 +3116,7 @@ snapshots:
       '@dotenvx/dotenvx': 1.75.1
       cn: 0.2.6
       code-block-writer: 13.0.3
-      deepmerge: 4.3.1
+      deepmerge: 4.3.1(patch_hash=f441e75bc0c393b1f00d53c5bc43f997cb99c3af563c30b39aaf22eaf847e438)
       execa: 9.6.1
       fast-glob: 3.3.3
       fs-extra: 11.4.1
@@ -3476,7 +3480,7 @@ snapshots:
 
   dedent@1.7.2: {}
 
-  deepmerge@4.3.1: {}
+  deepmerge@4.3.1(patch_hash=f441e75bc0c393b1f00d53c5bc43f997cb99c3af563c30b39aaf22eaf847e438): {}
 
   default-browser-id@5.0.1: {}
 
@@ -4310,7 +4314,7 @@ snapshots:
       cn: 0.2.6
       commander: 14.0.3
       dedent: 1.7.2
-      deepmerge: 4.3.1
+      deepmerge: 4.3.1(patch_hash=f441e75bc0c393b1f00d53c5bc43f997cb99c3af563c30b39aaf22eaf847e438)
       diff: 8.0.4
       execa: 9.6.1
       fast-glob: 3.3.3
@@ -4464,7 +4468,7 @@ snapshots:
     optionalDependencies:
       '@babel/core': 7.29.7
 
-  systeminformation@5.33.15: {}
+  systeminformation@5.33.16: {}
 
   tailwind-merge@3.7.0: {}
 

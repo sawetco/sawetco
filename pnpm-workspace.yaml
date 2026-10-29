@@ -6,6 +6,7 @@ ignoredBuiltDependencies:
 minimumReleaseAgeExclude:
   - browserslist@4.28.7
 overrides:
+  systeminformation: 5.33.16
   postcss: 8.5.26
   source-map-js: 1.2.2
   '@hono/node-server': 2.1.3
@@ -20,3 +21,6 @@ overrides:
   browserslist@<=4.28.6: ^4.28.7
   zod@>=3.25.0 <4.6.6: 4.6.6
   body-parser@>=2.0.0 <2.4.0: 2.4.0
+
+patchedDependencies:
+  deepmerge@4.3.1: patches/deepmerge@4.3.1.patch

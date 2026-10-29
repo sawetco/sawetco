@@ -1,6 +1,9 @@
 name: Quality
 
 on:
+  schedule:
+    - cron: "17 2 * * 3"
+  workflow_dispatch:
   pull_request:
   push:
     branches:
@@ -71,7 +74,22 @@ jobs:
             done <<< "$files"
           fi
 
+          if [ "$GITHUB_EVENT_NAME" = "schedule" ] || [ "$GITHUB_EVENT_NAME" = "workflow_dispatch" ]; then heavy=true; fi
           echo "heavy=$heavy" >> "$GITHUB_OUTPUT"
+
+  contribution-assets:
+    name: Contribution assets
+    needs: changes
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - run: node --test scripts/render-readme-stats.test.mjs
+      - name: Verify canonical generated SVG
+        run: |
+          node scripts/render-readme-stats.mjs
+          git diff --exit-code -- .github/readme-stats.svg
 
   quality:
     name: quality
@@ -113,7 +131,7 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Güvenlik denetimi
-        run: pnpm audit
+        run: pnpm security:audit
 
       - name: Kod kalitesini denetle
         run: pnpm lint
@@ -138,6 +156,7 @@ jobs:
     needs:
       - changes
       - quality
+      - contribution-assets
     if: always()
     runs-on: ubuntu-latest
     timeout-minutes: 5
@@ -147,6 +166,7 @@ jobs:
         env:
           CHANGES_RESULT: ${{ needs.changes.result }}
           HEAVY_REQUIRED: ${{ needs.changes.outputs.heavy }}
+          ASSET_RESULT: ${{ needs.contribution-assets.result }}
           QUALITY_RESULT: ${{ needs.quality.result }}
         run: |
           if [ "$CHANGES_RESULT" != "success" ]; then
@@ -154,6 +174,7 @@ jobs:
             exit 1
           fi
 
+          if [ "$ASSET_RESULT" != "success" ]; then exit 1; fi
           case "$HEAVY_REQUIRED" in
             true)
               if [ "$QUALITY_RESULT" != "success" ]; then
