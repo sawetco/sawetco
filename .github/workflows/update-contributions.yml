@@ -66,3 +66,4 @@ jobs:
           gh pr edit "$branch" --add-label automation:contributions
           gh workflow run quality.yml --ref "$branch"
           gh workflow run security.yml --ref "$branch"
+          gh workflow run codeql.yml --ref "$branch"

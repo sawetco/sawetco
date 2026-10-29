@@ -285,6 +285,8 @@ module.exports = async ({ github, context, core }) => {
       await dispatch(config.qualityWorkflow, defaultBranch);
       if (config.securityWorkflow)
         await dispatch(config.securityWorkflow, defaultBranch);
+      for (const workflow of config.supplementalWorkflows || [])
+        await dispatch(workflow, defaultBranch);
       if (release) await dispatch("release.yml", defaultBranch);
       else if (config.releaseFiles)
         await dispatch("release-plan.yml", defaultBranch);
