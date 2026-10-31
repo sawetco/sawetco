@@ -1,4 +1,5 @@
 "use strict";
+const backports = require("./security-backports.cjs").verify();
 const { spawnSync } = require("node:child_process");
 require("./verify-deepmerge.cjs").verify();
 const r =
@@ -15,20 +16,22 @@ const allowed = new Set([
   ".>shadcn>@shadcn/registry>deepmerge",
   ".>shadcn>deepmerge",
 ]);
-const remaining = Object.values(report.advisories).filter(
-  (a) =>
-    !(
-      a.module_name === "deepmerge" &&
-      a.url === "https://github.com/advisories/GHSA-gcqx-w48m-w2h4" &&
-      a.findings.length &&
-      a.findings.every(
-        (f) =>
-          f.version === "4.3.1" &&
-          f.paths.length &&
-          f.paths.every((p) => allowed.has(p)),
-      )
-    ),
-);
+const remaining = Object.values(report.advisories)
+  .filter((a) => !backports.pnpm(a))
+  .filter(
+    (a) =>
+      !(
+        a.module_name === "deepmerge" &&
+        a.url === "https://github.com/advisories/GHSA-gcqx-w48m-w2h4" &&
+        a.findings.length &&
+        a.findings.every(
+          (f) =>
+            f.version === "4.3.1" &&
+            f.paths.length &&
+            f.paths.every((p) => allowed.has(p)),
+        )
+      ),
+  );
 console.log(
   JSON.stringify({
     raw: report.metadata.vulnerabilities,

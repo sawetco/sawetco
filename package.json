@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "format": "biome format --write",
     "test:smoke": "node scripts/smoke-test.mjs",
-    "security:audit": "node .github/automation/audit.cjs"
+    "security:audit": "node .github/automation/audit.cjs",
+    "postinstall": "node .github/automation/security-backports.cjs --apply"
   },
   "dependencies": {
     "@base-ui/react": "^1.9.0",
