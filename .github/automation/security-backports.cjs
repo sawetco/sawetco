@@ -54,10 +54,27 @@ function installed(root) {
   return result;
 }
 function applicable(item) {
+  // Unknown/prerelease versions require review instead of falling out of range.
+  assert(
+    /^(0|[1-9]\d*)\.(0|[1-9]\d*)\.(0|[1-9]\d*)$/.test(item.version),
+    `Unreviewed package version: ${item.version}`,
+  );
   const [major, minor, patch] = item.version.split(".").map(Number);
   return item.name === "minimatch"
-    ? major < 11
-    : major >= 9 && (major < 14 || (major === 14 && minor === 0 && patch < 2));
+    ? major < 11 || (major === 11 && minor === 0 && patch < 1)
+    : item.name === "glob" &&
+        major >= 9 &&
+        (major < 14 || (major === 14 && minor === 0 && patch < 2));
+}
+function bunCovered(name, advisory, allCopies, verified) {
+  const affected = allCopies.filter(
+    (item) => item.name === name && applicable(item),
+  );
+  return (
+    data.advisories[name] === advisory?.url &&
+    affected.length > 0 &&
+    affected.every((item) => verified.includes(item))
+  );
 }
 function checkFiles(item, apply, root) {
   const policy = data.packages[`${item.name}@${item.version}`];
@@ -259,10 +276,7 @@ function verify(root = process.cwd(), apply = false) {
       );
     },
     bun(name, advisory) {
-      return (
-        data.advisories[name] === advisory.url &&
-        verified.some((item) => item.name === name)
-      );
+      return bunCovered(name, advisory, allCopies, verified);
     },
   };
 }
@@ -277,4 +291,11 @@ if (require.main === module) {
       `Verified ${verify(process.argv[3] || process.cwd(), process.argv[2] === "--apply").copies} reviewed security backports.`,
     );
 }
-module.exports = { verify, installed, checkFiles, applicable, probe };
+module.exports = {
+  verify,
+  installed,
+  checkFiles,
+  applicable,
+  probe,
+  bunCovered,
+};
