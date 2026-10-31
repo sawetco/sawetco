@@ -19,7 +19,7 @@ const {
   sameRepository,
 } = require("./policy.cjs");
 
-const {actionVerifier, checkBlockers} = require('./maintenance-guards.cjs');
+const { actionVerifier, checkBlockers } = require("./maintenance-guards.cjs");
 
 module.exports = async ({ github, context, core, appGithub }) => {
   const config = JSON.parse(
@@ -35,11 +35,16 @@ module.exports = async ({ github, context, core, appGithub }) => {
   const attention = [];
   let unresolved = false;
   const verifyActions = actionVerifier(github);
-  const reviewPath = '.github/automation/security-review.json';
+  const reviewPath = ".github/automation/security-review.json";
   if (fs.existsSync(reviewPath)) {
-    const review = JSON.parse(fs.readFileSync(reviewPath, 'utf8'));
-    if (!Number.isFinite(Date.parse(review.reviewBefore)) || Date.now() >= Date.parse(review.reviewBefore))
-      attention.push('- Security exception review is overdue; review the advisory evidence in security-review.json.');
+    const review = JSON.parse(fs.readFileSync(reviewPath, "utf8"));
+    if (
+      !Number.isFinite(Date.parse(review.reviewBefore)) ||
+      Date.now() >= Date.parse(review.reviewBefore)
+    )
+      attention.push(
+        "- Security exception review is overdue; review the advisory evidence in security-review.json.",
+      );
   }
   const getText = async (path, ref) => {
     const { data } = await api.repos.getContent({ owner, repo, path, ref });
@@ -150,7 +155,13 @@ module.exports = async ({ github, context, core, appGithub }) => {
           )
             safe = false;
         } else if (f.filename.startsWith(".github/workflows/")) {
-          if (!await verifyActions(await getText(f.filename, changeBase), await getText(f.filename, pr.head.sha))) safe = false;
+          if (
+            !(await verifyActions(
+              await getText(f.filename, changeBase),
+              await getText(f.filename, pr.head.sha),
+            ))
+          )
+            safe = false;
         } else if (
           /(^|\/)requirements(?:-[\w-]+)?\.(?:txt|in)$/.test(f.filename)
         ) {
@@ -248,16 +259,42 @@ module.exports = async ({ github, context, core, appGithub }) => {
     if (!acceptableChecks(checks, status.statuses, config.requiredChecks)) {
       unresolved = true;
       // Anchor grace to this head, not editable PR metadata or issue activity.
-      const headCommit = (await api.repos.getCommit({owner, repo, ref: pr.head.sha})).data;
-      const problems = checkBlockers(checks, status.statuses, config.requiredChecks, headCommit.commit?.committer?.date || pr.created_at);
+      const headCommit = (
+        await api.repos.getCommit({ owner, repo, ref: pr.head.sha })
+      ).data;
+      const problems = checkBlockers(
+        checks,
+        status.statuses,
+        config.requiredChecks,
+        headCommit.commit?.committer?.date || pr.created_at,
+      );
       if (problems.length) {
-        const runs = (await api.actions.listWorkflowRunsForRepo({owner, repo, head_sha: pr.head.sha, per_page: 100})).data.workflow_runs;
-        const retry = runs.find(r => r.status === 'completed' && r.conclusion === 'failure' && r.run_attempt < 2 && config.workflowNames.includes(r.name));
+        const runs = (
+          await api.actions.listWorkflowRunsForRepo({
+            owner,
+            repo,
+            head_sha: pr.head.sha,
+            per_page: 100,
+          })
+        ).data.workflow_runs;
+        const retry = runs.find(
+          (r) =>
+            r.status === "completed" &&
+            r.conclusion === "failure" &&
+            r.run_attempt < 2 &&
+            config.workflowNames.includes(r.name),
+        );
         if (retry) {
-          await api.actions.reRunWorkflowFailedJobs({owner, repo, run_id: retry.id});
+          await api.actions.reRunWorkflowFailedJobs({
+            owner,
+            repo,
+            run_id: retry.id,
+          });
           notes.push(`Retried failed jobs for #${pr.number} once.`);
         } else {
-          attention.push(`- [#${pr.number}](${pr.html_url}): ${problems.join('; ')}. [Inspect checks](${pr.html_url}/checks).`);
+          attention.push(
+            `- [#${pr.number}](${pr.html_url}): ${problems.join("; ")}. [Inspect checks](${pr.html_url}/checks).`,
+          );
         }
       }
       continue;
@@ -265,7 +302,10 @@ module.exports = async ({ github, context, core, appGithub }) => {
     // Re-read immediately before merge: never merge a SHA other than the one we classified and tested.
     const fresh = (await api.pulls.get({ owner, repo, pull_number: pr.number }))
       .data;
-    if (fresh.head.sha !== pr.head.sha || fresh.base.sha !== pr.base.sha) { unresolved = true; continue; }
+    if (fresh.head.sha !== pr.head.sha || fresh.base.sha !== pr.base.sha) {
+      unresolved = true;
+      continue;
+    }
     try {
       const result = (
         await api.pulls.merge({
@@ -298,18 +338,47 @@ module.exports = async ({ github, context, core, appGithub }) => {
     }
   }
   // Daily fallback catches production/quality failures without a new commit. Routine successes stay quiet.
-  const workflows = await github.paginate(api.actions.listRepoWorkflows, {owner, repo, per_page: 100});
-  for (const name of [...config.workflowNames, ...(config.monitoredWorkflows || [])]) {
-    const workflow = workflows.find(w => w.name === name);
-    if (!workflow) { unresolved = true; attention.push(`- ${name}: monitored workflow is missing.`); continue; }
-    const recent = (await api.actions.listWorkflowRuns({owner, repo, workflow_id: workflow.id, branch: defaultBranch, per_page: 100})).data.workflow_runs;
-    const run = recent.find(r => r.head_branch === defaultBranch && r.event !== 'pull_request');
-    if (!run || run.head_sha !== defaultHead || run.status !== 'completed') unresolved = true;
+  const workflows = await github.paginate(api.actions.listRepoWorkflows, {
+    owner,
+    repo,
+    per_page: 100,
+  });
+  for (const name of [
+    ...config.workflowNames,
+    ...(config.monitoredWorkflows || []),
+  ]) {
+    const workflow = workflows.find((w) => w.name === name);
+    if (!workflow) {
+      unresolved = true;
+      attention.push(`- ${name}: monitored workflow is missing.`);
+      continue;
+    }
+    const recent = (
+      await api.actions.listWorkflowRuns({
+        owner,
+        repo,
+        workflow_id: workflow.id,
+        branch: defaultBranch,
+        per_page: 100,
+      })
+    ).data.workflow_runs;
+    const run = recent.find(
+      (r) => r.head_branch === defaultBranch && r.event !== "pull_request",
+    );
+    if (!run || run.head_sha !== defaultHead || run.status !== "completed")
+      unresolved = true;
     if (
       run &&
       run.status === "completed" &&
       run.head_sha === defaultHead &&
-      ["failure", "timed_out", "action_required", "cancelled", "startup_failure", "stale"].includes(run.conclusion)
+      [
+        "failure",
+        "timed_out",
+        "action_required",
+        "cancelled",
+        "startup_failure",
+        "stale",
+      ].includes(run.conclusion)
     ) {
       if (run.run_attempt < 2 && run.conclusion === "failure") {
         await api.actions.reRunWorkflowFailedJobs({
