@@ -9,3 +9,5 @@ Failed jobs are retried once. Persistent failures and decisions appear in one as
 Actions use read-only permissions by default. The maintenance job alone has the permissions needed to merge, retry, dispatch and maintain its issue. CODEOWNERS documents responsibility; an independent approval is not required for a sole maintainer. Secrets must stay in GitHub/Vercel settings and never in commits or artifacts.
 
 Public repository CodeQL uses the explicit workflow so generated version/contribution PRs can dispatch the same source analyses. Both language jobs are required, including for bot-generated changes; scheduled scans remain fresh.
+
+The maintenance GitHub App mints an expiring token restricted to this repository. It creates generated PRs and updates outdated branches, so GitHub starts normal PR checks without per-run human approval. The coordinator retains a separate least-privilege workflow token for check/status reads, retries, merges and attention issues. Older failures are not reported while a newer run is pending or after the source head changed.

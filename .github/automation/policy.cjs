@@ -23,6 +23,25 @@ function safeVersion(before, after) {
     (b[1] > a[1] || (b[1] === a[1] && b[2] >= a[2]))
   );
 }
+function dependencyMapSafe(before, after) {
+  if (typeof before === "string" || typeof after === "string")
+    return before === after || safeVersion(before, after);
+  if (
+    !before ||
+    !after ||
+    Array.isArray(before) ||
+    Array.isArray(after) ||
+    typeof before !== "object" ||
+    typeof after !== "object"
+  )
+    return false;
+  const a = Object.keys(before).sort(),
+    b = Object.keys(after).sort();
+  return (
+    JSON.stringify(a) === JSON.stringify(b) &&
+    a.every((key) => dependencyMapSafe(before[key], after[key]))
+  );
+}
 function manifestSafe(before, after) {
   const a = JSON.parse(before),
     b = JSON.parse(after);
@@ -33,24 +52,11 @@ function manifestSafe(before, after) {
     "overrides",
     "resolutions",
   ]) {
-    const old = a[section] || {},
-      next = b[section] || {};
-    if (
-      JSON.stringify(Object.keys(old).sort()) !==
-      JSON.stringify(Object.keys(next).sort())
-    )
-      return false;
-    for (const key of Object.keys(old)) {
-      if (
-        JSON.stringify(old[key]) !== JSON.stringify(next[key]) &&
-        !safeVersion(old[key], next[key])
-      )
-        return false;
-    }
+    if (!dependencyMapSafe(a[section] || {}, b[section] || {})) return false;
     delete a[section];
     delete b[section];
   }
-  return JSON.stringify(a) === JSON.stringify(b);
+  return require("node:util").isDeepStrictEqual(a, b);
 }
 function actionPatchSafe(patch) {
   const removed = [],

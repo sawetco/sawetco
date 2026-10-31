@@ -105,3 +105,34 @@ test("forked contributions never inherit maintenance write permissions", () => {
     false,
   );
 });
+
+test("nested override updates preserve package names and all executable metadata", () => {
+  const before = {
+    overrides: { parent: { child: "1.2.3" } },
+    scripts: { postinstall: "node reviewed.js" },
+  };
+  assert.equal(
+    manifestSafe(
+      JSON.stringify(before),
+      JSON.stringify({ ...before, overrides: { parent: { child: "1.3.0" } } }),
+    ),
+    true,
+  );
+  assert.equal(
+    manifestSafe(
+      JSON.stringify(before),
+      JSON.stringify({ ...before, overrides: { parent: { child: "2.0.0" } } }),
+    ),
+    false,
+  );
+  assert.equal(
+    manifestSafe(
+      JSON.stringify(before),
+      JSON.stringify({
+        ...before,
+        scripts: { postinstall: "node unexpected.js" },
+      }),
+    ),
+    false,
+  );
+});

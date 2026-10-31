@@ -18,16 +18,18 @@ const {
   actionPatchSafe,
   acceptableChecks,
   sameRepository,
-  safeVersion,
 } = require("./policy.cjs");
 
-module.exports = async ({ github, context, core }) => {
+module.exports = async ({ github, context, core, appGithub }) => {
   const config = JSON.parse(
     fs.readFileSync(".github/automation/config.json", "utf8"),
   );
   const { owner, repo } = context.repo;
   const fullName = `${owner}/${repo}`;
   const api = github.rest;
+  const appLogin = process.env.MAINTENANCE_APP_SLUG
+    ? `${process.env.MAINTENANCE_APP_SLUG}[bot]`
+    : "";
   const notes = [];
   const attention = [];
   const getText = async (path, ref) => {
@@ -61,11 +63,11 @@ module.exports = async ({ github, context, core }) => {
     ).data;
     if (pr.draft || !sameRepository(pr, fullName)) continue;
     const release =
-      pr.user.login === "github-actions[bot]" &&
+      ["github-actions[bot]", appLogin].includes(pr.user.login) &&
       pr.head.ref === "automation/release";
     const contributions =
       repo === "sawetco" &&
-      pr.user.login === "github-actions[bot]" &&
+      ["github-actions[bot]", appLogin].includes(pr.user.login) &&
       pr.head.ref === "automation/contributions";
     if (pr.user.login !== "dependabot[bot]" && !release && !contributions)
       continue;
@@ -75,6 +77,26 @@ module.exports = async ({ github, context, core }) => {
       pull_number: pr.number,
       per_page: 100,
     });
+    if (
+      (release && !pr.labels.some((l) => l.name === "automation:release")) ||
+      (contributions &&
+        !pr.labels.some((l) => l.name === "automation:contributions"))
+    )
+      continue;
+    const comparison = (
+      await api.repos.compareCommitsWithBasehead({
+        owner,
+        repo,
+        basehead: `${pr.base.sha}...${pr.head.sha}`,
+      })
+    ).data;
+    const changeBase = comparison.merge_base_commit?.sha;
+    if (!changeBase) {
+      attention.push(
+        `- [#${pr.number}](${pr.html_url}): cannot determine the reviewed change base.`,
+      );
+      continue;
+    }
     let safe = true;
     if (contributions) {
       safe =
@@ -93,18 +115,12 @@ module.exports = async ({ github, context, core }) => {
         pr.labels.some((l) => l.name === "automation:release");
       // Generated version PRs are owned by the trusted release planner; no arbitrary source paths are accepted.
       if (safe) {
-        const compare = (
-          await api.repos.compareCommitsWithBasehead({
-            owner,
-            repo,
-            basehead: `${pr.base.sha}...${pr.head.sha}`,
-          })
-        ).data;
+        const compare = comparison;
         safe =
           compare.commits.length <= 10 &&
           compare.commits.every(
             (c) =>
-              c.author?.login === "github-actions[bot]" &&
+              [pr.user.login, appLogin].includes(c.author?.login) &&
               (c.commit.message.startsWith("chore(release): ") ||
                 (c.parents.length === 2 &&
                   /^Merge branch /.test(c.commit.message))),
@@ -119,7 +135,7 @@ module.exports = async ({ github, context, core }) => {
         if (/(^|\/)package\.json$/.test(f.filename)) {
           if (
             !manifestSafe(
-              await getText(f.filename, pr.base.sha),
+              await getText(f.filename, changeBase),
               await getText(f.filename, pr.head.sha),
             )
           )
@@ -131,24 +147,18 @@ module.exports = async ({ github, context, core }) => {
             const m = pr.title.match(/from\s+v?(\d+)[\s\S]*?to\s+v?(\d+)/i);
             if (m[1] !== m[2]) safe = false;
           }
-        } else if (/(^|\/)requirements(?:-[\w-]+)?\.txt$/.test(f.filename)) {
-          const a = (await getText(f.filename, pr.base.sha)).trim().split("\n");
-          const b = (await getText(f.filename, pr.head.sha)).trim().split("\n");
-          if (a.length !== b.length) safe = false;
-          else
-            for (let i = 0; i < a.length; i++)
-              if (a[i] !== b[i]) {
-                const x = a[i].match(/^([\w.-]+)([>=~!<]+)([\d.]+)\s*$/),
-                  y = b[i].match(/^([\w.-]+)([>=~!<]+)([\d.]+)\s*$/);
-                if (
-                  !x ||
-                  !y ||
-                  x[1] !== y[1] ||
-                  x[2] !== y[2] ||
-                  !safeVersion(x[3], y[3])
-                )
-                  safe = false;
-              }
+        } else if (
+          /(^|\/)requirements(?:-[\w-]+)?\.(?:txt|in)$/.test(f.filename)
+        ) {
+          if (
+            !structuredSafe(
+              "pip",
+              f.filename,
+              await getText(f.filename, changeBase),
+              await getText(f.filename, pr.head.sha),
+            )
+          )
+            safe = false;
         } else if (
           f.filename.endsWith("Cargo.toml") ||
           f.filename.endsWith("Cargo.lock")
@@ -157,7 +167,7 @@ module.exports = async ({ github, context, core }) => {
             !structuredSafe(
               "cargo",
               f.filename,
-              await getText(f.filename, pr.base.sha),
+              await getText(f.filename, changeBase),
               await getText(f.filename, pr.head.sha),
             )
           )
@@ -167,7 +177,7 @@ module.exports = async ({ github, context, core }) => {
             !structuredSafe(
               "composer",
               f.filename,
-              await getText(f.filename, pr.base.sha),
+              await getText(f.filename, changeBase),
               await getText(f.filename, pr.head.sha),
             )
           )
@@ -182,7 +192,7 @@ module.exports = async ({ github, context, core }) => {
       // Lockfile-only groups must state a minor/patch update, not silently bundle a major.
       if (
         !files.some((f) =>
-          /(package\.json|requirements.*\.txt|Cargo\.(toml|lock)|composer\.json|workflows\/)/.test(
+          /(package\.json|requirements.*\.(?:txt|in)|Cargo\.(toml|lock)|composer\.json|workflows\/)/.test(
             f.filename,
           ),
         )
@@ -195,9 +205,15 @@ module.exports = async ({ github, context, core }) => {
       );
       continue;
     }
-    if (pr.mergeable_state === "behind") {
+    if (comparison.behind_by > 0 || pr.mergeable_state === "behind") {
+      if (!appGithub) {
+        attention.push(
+          `- [#${pr.number}](${pr.html_url}): finish the maintenance GitHub App installation so branch updates can run CI without human approval.`,
+        );
+        continue;
+      }
       try {
-        await api.pulls.updateBranch({
+        await appGithub.rest.pulls.updateBranch({
           owner,
           repo,
           pull_number: pr.number,
@@ -244,6 +260,7 @@ module.exports = async ({ github, context, core }) => {
         ).data.workflow_runs;
         const retry = runs.find(
           (r) =>
+            r.status === "completed" &&
             r.conclusion === "failure" &&
             r.run_attempt < 2 &&
             config.workflowNames.includes(r.name),
@@ -281,7 +298,7 @@ module.exports = async ({ github, context, core }) => {
       notes.push(
         `Merged tested ${release ? "release" : "dependency"} PR #${pr.number}.`,
       );
-      // GITHUB_TOKEN writes do not trigger push workflows. Dispatch source-only checks explicitly for the actual merge commit.
+      // GITHUB_TOKEN merges do not trigger push workflows. Dispatch source-only checks explicitly for the actual merge commit.
       await dispatch(config.qualityWorkflow, defaultBranch);
       if (config.securityWorkflow)
         await dispatch(config.securityWorkflow, defaultBranch);
@@ -309,11 +326,12 @@ module.exports = async ({ github, context, core }) => {
       (r) =>
         r.name === name &&
         r.head_branch === defaultBranch &&
-        r.event !== "pull_request" &&
-        r.status === "completed",
+        r.event !== "pull_request",
     );
     if (
       run &&
+      run.status === "completed" &&
+      run.head_sha === defaultHead &&
       ["failure", "timed_out", "action_required"].includes(run.conclusion)
     ) {
       if (run.run_attempt < 2) {

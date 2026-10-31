@@ -20,6 +20,7 @@ concurrency:
 
 jobs:
   update:
+    if: (vars.MAINTENANCE_APP_ID != '' && vars.MAINTENANCE_APP_INSTALLATION_ID != '')
     runs-on: ubuntu-latest
     timeout-minutes: 10
     permissions:
@@ -28,8 +29,21 @@ jobs:
       actions: write
       issues: write
     steps:
+      - name: Create a short-lived token for this repository only
+        id: maintenance-app
+        if: (vars.MAINTENANCE_APP_ID != '' && vars.MAINTENANCE_APP_INSTALLATION_ID != '')
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3
+        with:
+          app-id: ${{ vars.MAINTENANCE_APP_ID }}
+          private-key: ${{ secrets.MAINTENANCE_APP_PRIVATE_KEY }}
+          owner: ${{ github.repository_owner }}
+          repositories: ${{ github.event.repository.name }}
+          permission-contents: write
+          permission-pull-requests: write
       - name: Depoyu al
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          token: ${{ steps.maintenance-app.outputs.token }}
 
       - name: Node.js kur
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
@@ -47,7 +61,7 @@ jobs:
 
       - name: Create or refresh the tested contribution pull request
         env:
-          GH_TOKEN: ${{ github.token }}
+          GH_TOKEN: ${{ steps.maintenance-app.outputs.token }}
         run: |
           set -euo pipefail
           if git diff --quiet -- data/github-contributions.json .github/readme-stats.svg; then exit 0; fi
@@ -64,6 +78,3 @@ jobs:
           fi
           gh label create automation:contributions --color 1d76db --force
           gh pr edit "$branch" --add-label automation:contributions
-          gh workflow run quality.yml --ref "$branch"
-          gh workflow run security.yml --ref "$branch"
-          gh workflow run codeql.yml --ref "$branch"
