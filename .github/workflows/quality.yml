@@ -85,6 +85,10 @@ jobs:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
+      - uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
+        with:
+          node-version: 26
+          package-manager-cache: false
       - run: node --test scripts/render-readme-stats.test.mjs
       - name: Verify canonical generated SVG
         run: |
@@ -105,14 +109,15 @@ jobs:
       - name: Node.js kur
         uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7
         with:
-          node-version: 24
+          node-version: 26
           package-manager-cache: false
 
       - name: pnpm kur
         shell: bash
         run: |
-          corepack enable
-          pnpm --version
+          node -e 'if (require("./package.json").packageManager !== "pnpm@11.21.0") throw new Error("Update the pinned pnpm bootstrap with packageManager");'
+          npm install --global pnpm@11.21.0 --ignore-scripts --no-audit --no-fund
+          test "$(pnpm --version)" = "11.21.0"
 
       - name: pnpm store yolunu bul
         id: pnpm-store
@@ -123,9 +128,9 @@ jobs:
         uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
         with:
           path: ${{ steps.pnpm-store.outputs.path }}
-          key: ${{ runner.os }}-node24-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
+          key: ${{ runner.os }}-node26-pnpm-${{ hashFiles('pnpm-lock.yaml') }}
           restore-keys: |
-            ${{ runner.os }}-node24-pnpm-
+            ${{ runner.os }}-node26-pnpm-
 
       - name: Bağımlılıkları kur
         run: pnpm install --frozen-lockfile
