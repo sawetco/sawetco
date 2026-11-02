@@ -168,6 +168,13 @@ test("an outdated dependency PR is classified against its merge base before the 
       },
     };
   };
+  f.rest.checks = { listForRef: async () => ({ data: [] }) };
+  f.rest.repos.getCombinedStatusForRef = async () => ({
+    data: { statuses: [] },
+  });
+  f.rest.repos.getCommit = async () => ({
+    data: { commit: { committer: { date: "2020-01-01" } } },
+  });
   const updates = [];
   const appGithub = {
     rest: { pulls: { updateBranch: async (p) => updates.push(p) } },

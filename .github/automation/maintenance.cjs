@@ -19,6 +19,7 @@ const {
   sameRepository,
 } = require("./policy.cjs");
 
+const { queuePlan, headWaiting } = require("./maintenance-queue.cjs");
 const { actionVerifier, checkBlockers } = require("./maintenance-guards.cjs");
 
 module.exports = async ({ github, context, core, appGithub }) => {
@@ -71,6 +72,19 @@ module.exports = async ({ github, context, core, appGithub }) => {
     base: defaultBranch,
     per_page: 100,
   });
+  const title = "Maintenance requires attention";
+  const marker = "<!-- autonomous-maintenance:v1 -->";
+  const issues = await github.paginate(api.issues.listForRepo, {
+    owner,
+    repo,
+    state: "open",
+    creator: "github-actions[bot]",
+    per_page: 100,
+  });
+  const issue = issues.find(
+    (i) => !i.pull_request && i.title === title && i.body?.includes(marker),
+  );
+  const candidates = [];
   for (const summary of pulls) {
     const pr = (
       await api.pulls.get({ owner, repo, pull_number: summary.number })
@@ -220,6 +234,71 @@ module.exports = async ({ github, context, core, appGithub }) => {
       );
       continue;
     }
+    candidates.push({ pr, comparison, release, contributions });
+  }
+  // Observe every eligible head before mutating any branch. A running queue head
+  // must not cause another PR to be rebased on the next completion event.
+  for (const candidate of candidates) {
+    const { pr } = candidate;
+    candidate.checks = await github.paginate(api.checks.listForRef, {
+      owner,
+      repo,
+      ref: pr.head.sha,
+      per_page: 100,
+    });
+    candidate.status = (
+      await api.repos.getCombinedStatusForRef({
+        owner,
+        repo,
+        ref: pr.head.sha,
+      })
+    ).data;
+    candidate.observedAt =
+      (
+        await api.repos.getCommit({
+          owner,
+          repo,
+          ref: pr.head.sha,
+        })
+      ).data.commit?.committer?.date || pr.created_at;
+  }
+  // A trusted operator can select an urgent reviewed security PR via manual
+  // dispatch. It still passes the identical author/source/diff/check policies.
+  const priorityInput =
+    context.eventName === "workflow_dispatch" &&
+    context.ref === `refs/heads/${defaultBranch}`
+      ? context.payload?.inputs?.priority_pr
+      : "";
+  const priority = /^[1-9][0-9]*$/.test(priorityInput || "")
+    ? Number(priorityInput)
+    : 0;
+  const selected = priority
+    ? candidates.filter((c) => c.pr.number === priority)
+    : candidates;
+  if (priority && !selected.length)
+    attention.push(
+      `- #${priority}: urgent selection is not eligible under the automatic policy; review manually.`,
+    );
+  for (const candidate of selected)
+    candidate.updateBlocked = !!issue?.body?.includes(
+      `<!-- maintenance-update-failed:${candidate.pr.number}:${candidate.pr.head.sha} -->`,
+    );
+  const plan = queuePlan(selected, config.requiredChecks);
+  let updateAttempted = false;
+  for (const candidate of plan.ordered) {
+    const {
+      pr,
+      comparison,
+      release,
+      contributions,
+      checks,
+      status,
+      observedAt,
+    } = candidate;
+    if (pr.mergeable === false) {
+      attention.push(`- [#${pr.number}](${pr.html_url}): merge conflict.`);
+      continue;
+    }
     if (comparison.behind_by > 0 || pr.mergeable_state === "behind") {
       unresolved = true;
       if (!appGithub) {
@@ -228,6 +307,31 @@ module.exports = async ({ github, context, core, appGithub }) => {
         );
         continue;
       }
+      const failedMarker = `<!-- maintenance-update-failed:${pr.number}:${pr.head.sha} -->`;
+      if (issue?.body?.includes(failedMarker)) {
+        attention.push(
+          `- [#${pr.number}](${pr.html_url}): previous branch update failed; repair this head or clear its failure marker after investigation. ${failedMarker}`,
+        );
+        continue;
+      }
+      const stalled = checkBlockers(
+        checks,
+        status.statuses,
+        config.requiredChecks,
+        observedAt,
+      ).filter((problem) => problem.includes("pending beyond 24 hours"));
+      if (stalled.length) {
+        attention.push(
+          `- [#${pr.number}](${pr.html_url}): ${stalled.join("; ")}.`,
+        );
+        continue;
+      }
+      // A previously failed/stalled head may be skipped. Recheck the next
+      // candidate's own running work before ever rebasing it.
+      if (headWaiting(candidate, config.requiredChecks)) break;
+      if (plan.wait || updateAttempted) continue;
+      // Consume even on API failure: an uncertain response must not cause a storm.
+      updateAttempted = true;
       try {
         await appGithub.rest.pulls.updateBranch({
           owner,
@@ -238,35 +342,18 @@ module.exports = async ({ github, context, core, appGithub }) => {
         notes.push(`Updated #${pr.number} against ${defaultBranch}.`);
       } catch {
         attention.push(
-          `- [#${pr.number}](${pr.html_url}): automatic branch update failed; resolve the conflict.`,
+          `- [#${pr.number}](${pr.html_url}): automatic branch update failed; inspect the outcome before retrying. ${failedMarker}`,
         );
       }
       continue;
     }
-    if (pr.mergeable === false) {
-      attention.push(`- [#${pr.number}](${pr.html_url}): merge conflict.`);
-      continue;
-    }
-    const checks = await github.paginate(api.checks.listForRef, {
-      owner,
-      repo,
-      ref: pr.head.sha,
-      per_page: 100,
-    });
-    const status = (
-      await api.repos.getCombinedStatusForRef({ owner, repo, ref: pr.head.sha })
-    ).data;
     if (!acceptableChecks(checks, status.statuses, config.requiredChecks)) {
       unresolved = true;
-      // Anchor grace to this head, not editable PR metadata or issue activity.
-      const headCommit = (
-        await api.repos.getCommit({ owner, repo, ref: pr.head.sha })
-      ).data;
       const problems = checkBlockers(
         checks,
         status.statuses,
         config.requiredChecks,
-        headCommit.commit?.committer?.date || pr.created_at,
+        observedAt,
       );
       if (problems.length) {
         const runs = (
@@ -285,18 +372,25 @@ module.exports = async ({ github, context, core, appGithub }) => {
             config.workflowNames.includes(r.name),
         );
         if (retry) {
+          if (updateAttempted || plan.wait) continue;
           await api.actions.reRunWorkflowFailedJobs({
             owner,
             repo,
             run_id: retry.id,
           });
           notes.push(`Retried failed jobs for #${pr.number} once.`);
+          updateAttempted = true;
         } else {
           attention.push(
             `- [#${pr.number}](${pr.html_url}): ${problems.join("; ")}. [Inspect checks](${pr.html_url}/checks).`,
           );
         }
       }
+      continue;
+    }
+    // Never invalidate a selected head's running checks or a just-updated base.
+    if (plan.wait || updateAttempted) {
+      unresolved = true;
       continue;
     }
     // Re-read immediately before merge: never merge a SHA other than the one we classified and tested.
@@ -394,18 +488,6 @@ module.exports = async ({ github, context, core, appGithub }) => {
         );
     }
   }
-  const title = "Maintenance requires attention";
-  const marker = "<!-- autonomous-maintenance:v1 -->";
-  const issues = await github.paginate(api.issues.listForRepo, {
-    owner,
-    repo,
-    state: "open",
-    creator: "github-actions[bot]",
-    per_page: 100,
-  });
-  const issue = issues.find(
-    (i) => !i.pull_request && i.title === title && i.body?.includes(marker),
-  );
   const unique = [...new Set(attention)].sort();
   if (unique.length) {
     const body = `${marker}\nRoutine passing updates are handled automatically. Only the following items need a decision or a repair:\n\n${unique.join("\n")}\n\nLast inspected default commit: \`${defaultHead.slice(0, 12)}\`. No credentials or user data are included.`;
